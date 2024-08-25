@@ -1,0 +1,22 @@
+replicaCount: 2
+
+image:
+  repository: saud12345/java
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: java.example234.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources: {}
