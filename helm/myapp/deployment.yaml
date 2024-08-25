@@ -22,6 +22,6 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.targetPort }}   # Use port 8080 as specified in Dockerfile
+            - containerPort: {{ .Values.service.targetPort }}   # Using port 8080 as specified in Dockerfile
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }} #default action will be taken as we have not specified any resources in our values.yml
