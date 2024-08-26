@@ -29,5 +29,5 @@ if ! kubectl get pods -n ingress-nginx | grep -q "nginx-ingress-controller"; the
     echo "NGINX Ingress Controller not found. Installing..."
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
 fi
-
+kubectl rollout restart deployment myapp-deployment -n demo-app
 echo "Deployment complete."
