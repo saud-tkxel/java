@@ -3,7 +3,7 @@ replicaCount: 2
 image:
   repository: saud12345/java  
   tag: latest                 
-  pullPolicy: IfNotPresent   
+  pullPolicy: Always
 
 service:
   type: LoadBalancer            
