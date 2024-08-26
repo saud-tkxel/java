@@ -1,132 +1,102 @@
 provider "aws" {
-  region = "us-east-1"
+  region  = "us-east-1"
+  profile = "terraform-demo"
 }
 
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.13.0"  # Updated to the latest version
-  name    = "myapp-vpc"
-  cidr    = "10.0.0.0/16"
-  azs     = ["us-east-1a", "us-east-1b", "us-east-1c"]
-  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  private_subnets = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-  enable_nat_gateway = true
-  single_nat_gateway = true
-}
-
-module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
-  version         = "19.18.0"
-  cluster_name    = "myapp-eks"
-  cluster_version = "1.27"
-  vpc_id          = module.vpc.vpc_id
-  subnet_ids      = module.vpc.private_subnets
-
-  # Enabling IAM Roles for Service Accounts (IRSA)
-  enable_irsa = true
-}
-
-resource "aws_iam_role" "eks_node_group" {
-  name = "myapp-eks-node-group-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        },
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_node_group_policy" {
-  role      = aws_iam_role.eks_node_group.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
-  role      = aws_iam_role.eks_node_group.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-}
-
-module "eks_managed_node_group" {
-  source = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
-  version = "19.18.0"
-
-  name            = "myapp-node-group"
-  cluster_name    = module.eks.cluster_name
-  cluster_version = module.eks.cluster_version
-  subnet_ids      = module.vpc.private_subnets
-
-  cluster_primary_security_group_id = module.eks.cluster_primary_security_group_id
-  vpc_security_group_ids            = [module.eks.node_security_group_id]
-
-  min_size     = 1
-  max_size     = 3
-  desired_size = 2
-
-  instance_types = ["t3.medium"]
-  capacity_type  = "ON_DEMAND"
-
-  iam_role_arn = aws_iam_role.eks_node_group.arn
-
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
   tags = {
-    Environment = "dev"
-    Terraform   = "true"
+    Name = "main-vpc"
   }
 }
 
-# Create an Internet Gateway
-resource "aws_internet_gateway" "main" {
-  vpc_id = module.vpc.vpc_id
-}
-
-# Create a Route Table for Public Subnets
-resource "aws_route_table" "public" {
-  vpc_id = module.vpc.vpc_id
-}
-
-# Create a Route to the Internet Gateway
-resource "aws_route" "internet_access" {
-  route_table_id         = aws_route_table.public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main.id
-}
-
-# Associate the Route Table with Public Subnets
-resource "aws_route_table_association" "public_subnets" {
-  count          = length(module.vpc.public_subnets)
-  subnet_id      = module.vpc.public_subnets[count.index]
-  route_table_id = aws_route_table.public.id
-}
-
-# Create a Route Table for Private Subnets
-resource "aws_route_table" "private" {
-  vpc_id = module.vpc.vpc_id
-}
-
-# Fetch NAT Gateway ID
-data "aws_nat_gateway" "example" {
-  filter {
-    name   = "vpc-id"
-    values = [module.vpc.vpc_id]
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "main-igw"
   }
 }
 
-# Create a Route to the NAT Gateway
-resource "aws_route" "nat_gateway" {
-  route_table_id         = aws_route_table.private.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = data.aws_nat_gateway.example.id
+resource "aws_subnet" "public" {
+  count                   = 3
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
+  availability_zone       = element(data.aws_availability_zones.available.names, count.index)
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "public-subnet-${count.index}"
+  }
 }
 
-# Associate the Route Table with Private Subnets
-resource "aws_route_table_association" "private_subnets" {
-  count          = length(module.vpc.private_subnets)
-  subnet_id      = module.vpc.private_subnets[count.index]
-  route_table_id = aws_route_table.private.id
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+  tags = {
+    Name = "public-rt"
+  }
+}
+
+resource "aws_route_table_association" "public_association" {
+  count          = length(aws_subnet.public)
+  subnet_id      = element(aws_subnet.public.*.id, count.index)
+  route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_eip" "nat_eip" {
+  count  = 1
+  domain = "vpc"
+}
+
+resource "aws_nat_gateway" "nat_gw" {
+  allocation_id = aws_eip.nat_eip[0].id
+  subnet_id     = aws_subnet.public[0].id
+  tags = {
+    Name = "nat-gw"
+  }
+}
+
+resource "aws_subnet" "private" {
+  count             = 3
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index + 3)
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
+  tags = {
+    Name = "private-subnet-${count.index}"
+  }
+}
+
+resource "aws_route_table" "private_rt" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gw.id
+  }
+  tags = {
+    Name = "private-rt"
+  }
+}
+
+resource "aws_route_table_association" "private_association" {
+  count          = length(aws_subnet.private)
+  subnet_id      = element(aws_subnet.private.*.id, count.index)
+  route_table_id = aws_route_table.private_rt.id
+}
+
+data "aws_availability_zones" "available" {}
+
+output "vpc_id" {
+  value = aws_vpc.main.id
+}
+
+output "public_subnets" {
+  value = aws_subnet.public[*].id
+}
+
+output "private_subnets" {
+  value = aws_subnet.private[*].id
 }
