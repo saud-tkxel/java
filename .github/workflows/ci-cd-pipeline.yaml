@@ -52,4 +52,6 @@ jobs:
         aws-region: 'us-east-1'
 
     - name: Deploy to EKS using Helm
-      run: ./deploy.sh
+      run: |
+          aws eks update-kubeconfig --name eks-cluster-demo --region us-east-1
+          ./deploy.sh
