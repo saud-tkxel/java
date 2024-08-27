@@ -4,7 +4,7 @@
 
 - AWS account with appropriate permissions
 - Docker installed
-- DockerHub public repo configured for the Application image 
+- ECR Private Repo configured for the Application image 
 - AWS CLI installed and configured
 - Terraform installed
 - Helm installed
@@ -20,4 +20,4 @@
 ## AWS Credentials Setup
 
 1. Store AWS credentials in GitHub secrets.
-2. Use the `aws-actions/configure-aws-credentials` action to configure AWS credentials in GitHub Actions.
+2. Used the `aws-actions/configure-aws-credentials` action to configure AWS credentials in GitHub Actions.
