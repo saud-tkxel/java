@@ -14,11 +14,12 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.4.6 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: us-east-1
+           role-to-assume: arn:aws:iam::099199746132:role/terraform-assume-role
+           aws-region: us-east-1
+           audience: sts.amazonaws.com
 
     #   - name: Configure AWS Credentials
     #     env:
@@ -60,7 +61,7 @@ jobs:
         run: |
           cd ./terrafrom-eks 
           terraform plan
-          
+
       - name: Wait for approval
         uses: trstringer/manual-approval@v1
         with:
