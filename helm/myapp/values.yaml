@@ -15,7 +15,7 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: nginx  
   hosts:
-    - host: a0cf5a0510a6743e9a23b277f870e4dd-227868333.us-east-1.elb.amazonaws.com
+    - host: a8787003711d14a7380e8a6fbb3571c4-518826175.us-east-1.elb.amazonaws.com
       paths:
         - path: /
           pathType: Prefix
