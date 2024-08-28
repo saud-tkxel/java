@@ -60,6 +60,7 @@ jobs:
         run: |
           cd ./terrafrom-eks 
           terraform plan
+          
       - name: Wait for approval
         uses: trstringer/manual-approval@v1
         with:
