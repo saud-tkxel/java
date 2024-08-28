@@ -2,7 +2,7 @@
 
 provider "aws" {
   region  = "us-east-1"
-  profile = "terraform-demo"
+  #profile = "terraform-demo"
 }
 
 module "vpc" {
