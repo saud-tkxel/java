@@ -22,7 +22,7 @@ jobs:
       - name: Terraform Init
         run: |
            pwd
-           cd ../terrafrom-eks
+           cd ./terrafrom-eks
            terraform init
 
       - name: Terraform Plan
