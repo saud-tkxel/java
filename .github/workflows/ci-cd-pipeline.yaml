@@ -24,7 +24,7 @@ jobs:
       - name: Configure AWS credentials
         uses: ./.github/actions/aws-configure
         with:
-          role-arn: "arn:aws:iam::099199746132:role/terraform-assume-role"
+          role-arn: arn:aws:iam::099199746132:role/terraform-assume-role
           region: 'us-east-1'
 
       - name: Login to ECR
@@ -52,7 +52,7 @@ jobs:
       - name: Configure AWS credentials
         uses: ./.github/actions/aws-configure
         with:
-          role-arn: "arn:aws:iam::099199746132:role/terraform-assume-role"
+          role-arn: arn:aws:iam::099199746132:role/terraform-assume-role
           region: 'us-east-1'
 
       - name: Deploy to EKS using Helm
