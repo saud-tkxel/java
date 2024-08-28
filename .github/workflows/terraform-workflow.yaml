@@ -26,7 +26,9 @@ jobs:
            terraform init
 
       - name: Terraform Plan
-        run: terraform plan
+        run: |
+          cd ./terrafrom-eks 
+          terraform plan
 
       - name: Terraform Apply
         env:
@@ -45,4 +47,5 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo $CREDS | jq -r '.Credentials.SessionToken')
 
           # Run Terraform
+          cd ./terrafrom-eks
           terraform apply -auto-approve
