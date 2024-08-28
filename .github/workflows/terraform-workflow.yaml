@@ -49,7 +49,7 @@ jobs:
       - name: Wait for approval
         uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
+          secret: ${{ secrets.PAT_TOKEN }}
           approvers: saud-tkxel
           minimum-approvals: 1
 
